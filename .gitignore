@@ -1,0 +1,7 @@
+venv/ 
+logs/*
+!logs/
+data/guid/*
+!data/guid/
+data/*.csv
+config.ini
