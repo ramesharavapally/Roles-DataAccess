@@ -60,7 +60,9 @@ def __filter_dataccess_data(json_data: list , df : pd.DataFrame) -> list:
 
 def get_dataccess_data() -> str:
     erp_url , username , password , guid_report , roles_report = get_config_details()
-    json_data = get_dataccess_source_data()    
+    json_data = get_dataccess_source_data()  
+    if json_data is None:
+        return None          
     df = ErpReportService(erp_url,username,password).runrolesreport(roles_report , save_report_name= 'temp.csv')
     filter_data = __filter_dataccess_data(json_data=json_data , df=df)
     return json.dumps(filter_data , indent=4)
@@ -78,10 +80,18 @@ def main():
     status = ErpReportService(erp_url,username,password).runguidreport(guid_report , save_report_name='guid_report.xls')    
     if 'Success' == status:
         user_roles_data = get_user_roles_data_with_guid()        
-        UserRoles(erp_url,username,password).assign_roles_to_users(user_roles_data= user_roles_data)        
-        dataccess_data = get_dataccess_data()        
-        RoleDatAccess(erp_url,username,password).assign_dataccess_to_users(roles_dataaccess_data=dataccess_data)
-        save_latest_roles_report()
+        if user_roles_data is None:            
+            print(f"there is not data to process for roles ")        
+        else:
+            UserRoles(erp_url,username,password).assign_roles_to_users(user_roles_data= user_roles_data)        
+        
+        dataccess_data = get_dataccess_data() 
+        
+        if dataccess_data is None:
+            print(f"there is not data to process for dataccess sets ")        
+        else:            
+            RoleDatAccess(erp_url,username,password).assign_dataccess_to_users(roles_dataaccess_data=dataccess_data)
+            save_latest_roles_report()
     else:
         print(status)
 

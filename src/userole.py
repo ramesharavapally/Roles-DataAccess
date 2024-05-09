@@ -23,7 +23,7 @@ class UserRoles:
                     'Accept':'application/json'
                         }
 
-    def assign_roles_to_users(self , user_roles_data:str) -> None:
+    def assign_roles_to_users(self , user_roles_data:str) -> None:        
         user_roles = json.loads(user_roles_data)
         api_url = '/hcmRestApi/scim/Roles/'    
         

@@ -14,6 +14,10 @@ def is_file_open(file_path) -> bool:
         return False
     except PermissionError:
         return True    
+    
+def is_sheet_empty(file_path, sheet_name):
+    df = pd.read_excel(file_path, sheet_name)    
+    return df.empty    
 
 def __read_sheet_as_strings(file_path, sheet_name) -> list:
     # Load the workbook
@@ -39,7 +43,9 @@ def __read_sheet_as_strings(file_path, sheet_name) -> list:
 def __user_roles_excel_to_json(file_path) -> list:
         
     if is_file_open(file_path):
-        raise Exception(f"Error: File '{file_path}' is already open. Please close the file and try again.")            
+        raise Exception(f"Error: File '{file_path}' is already open. Please close the file and try again.")                
+    if is_sheet_empty(file_path=file_path , sheet_name='Roles'):
+        return None
     sheet = __read_sheet_as_strings(file_path= file_path , sheet_name='Roles')
     
     # Define an empty list to store the data
@@ -49,6 +55,8 @@ def __user_roles_excel_to_json(file_path) -> list:
     for row in sheet:
         # Create a dictionary to store each row of data
         row = list(row)
+        if all(rec == '' for rec in row):
+            continue
         for i in range(len(row)):
             if row[i] is None:
                 row[i] = ""
@@ -72,9 +80,13 @@ def __user_roles_source_data(folder_path : str) -> object:
         if filename.endswith('.xlsx'):
             file_path = os.path.join(folder_path, filename)
             json_data = __user_roles_excel_to_json(file_path)
+            if json_data is None:
+                continue
             json_data_array.append(json_data)
     
-    output = []
+    output = []    
+    if len(json_data_array) == 0 : 
+        return None
     for record in json_data_array:
         output.extend(record)
     df = pd.DataFrame(output)
@@ -101,10 +113,10 @@ def __read_guid_meta_data( guid_folder_path : str) -> list[pd.DataFrame] :
     return users_df , roles_df
 
 def __replace_with_ids(data, user_df , role_df) -> list:
-    updated_data = []
+    updated_data = []    
     for item in data:   
         user_role_dict = {}             
-        user_role_dict['UserName'] = item['UserName']
+        user_role_dict['UserName'] = item['UserName']        
         if user_df['USERNAME'].str.contains(item['UserName']).any():            
             user_id = user_df.loc[user_df['USERNAME'] == item['UserName'], 'USER GUID'].values[0]            
             user_role_dict['UserID'] = user_id
@@ -131,7 +143,9 @@ def __replace_with_ids(data, user_df , role_df) -> list:
 def get_user_roles_data_with_guid() -> str:
     guid_folder_path = r'..\data\guid'
     roles_folder_path = r'..\data\roles'
-    source_json_data = __user_roles_source_data(roles_folder_path)    
+    source_json_data = __user_roles_source_data(roles_folder_path)        
+    if source_json_data is None:        
+        return None
     user_df , role_df = __read_guid_meta_data(guid_folder_path=guid_folder_path)
     data = __replace_with_ids(data= source_json_data , user_df= user_df , role_df= role_df)
     return json.dumps(data , indent=4)
@@ -146,6 +160,8 @@ def get_user_roles_data_with_guid() -> str:
 def __roles_dataccess_excel_to_json(file_path) -> list:        
     if is_file_open(file_path):
         raise Exception(f"Error: File '{file_path}' is already open. Please close the file and try again.")            
+    if is_sheet_empty(file_path= file_path , sheet_name='DataAccess'):
+        return None
     sheet = __read_sheet_as_strings(file_path= file_path , sheet_name='DataAccess')
     
     # Define an empty list to store the data
@@ -155,6 +171,8 @@ def __roles_dataccess_excel_to_json(file_path) -> list:
     for row in sheet:
         # Create a dictionary to store each row of data
         row = list(row)
+        if all(rec == '' for rec in row):
+            continue
         for i in range(len(row)):
             if row[i] is None:
                 row[i] = ""
@@ -180,9 +198,13 @@ def get_dataccess_source_data() -> object:
         if filename.endswith('.xlsx') or filename.endswith('.xls'):
             file_path = os.path.join(folder_path, filename)
             json_data = __roles_dataccess_excel_to_json(file_path)
+            if json_data is None:
+                continue
             json_data_array.append(json_data)
     
     output = []
+    if len(json_data_array) == 0:
+        return None
     for record in json_data_array:
         output.extend(record)
     df = pd.DataFrame(output)
@@ -197,3 +219,4 @@ def get_dataccess_source_data() -> object:
 
         
 
+# print(get_user_roles_data_with_guid())
