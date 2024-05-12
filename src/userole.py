@@ -22,11 +22,23 @@ class UserRoles:
                     'Content-type':'application/json', 
                     'Accept':'application/json'
                         }
+    
+    def get_report_data(self) -> pd.DataFrame:
+        return pd.read_csv(r'..\data\temp.csv')
+    
+    def __is_combination_present(self , username : str , rolename : str , df:pd.DataFrame) -> bool :
+        return(
+            (
+                (df['USER_NAME'].str.upper().str.strip() == username.upper().strip()) & 
+                (df['JOB_ROLE_NAME'].str.upper().str.strip() == rolename.upper().strip())
+            )
+        ).any()
+        
 
     def assign_roles_to_users(self , user_roles_data:str) -> None:        
         user_roles = json.loads(user_roles_data)
         api_url = '/hcmRestApi/scim/Roles/'    
-        
+        df = self.get_report_data()
         for user in user_roles:            
             print(f"processing for the user {user['UserName']}")            
             self.logger.info(f"processing for the user {user['UserName']}")        
@@ -38,6 +50,11 @@ class UserRoles:
                     if role['RoleID'] is None or role['RoleID'] == '':
                         self.logger.error(f"Invalid Role {role['RoleName']}")
                         continue
+                    if role['Operation'] == 'ADD':
+                        if self.__is_combination_present(user['UserName'] , role['RoleName'] , df):
+                            self.logger.error(f"""Role "{role['RoleName']}" is already assigned to user "{user['UserName']}" """)
+                            continue
+                                                
                     url = f"{self.erp_url}{api_url}{role['RoleID']}"
                     payload = payload = f""" {{                                     
                                                 "members": [

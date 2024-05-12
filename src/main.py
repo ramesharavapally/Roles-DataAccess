@@ -34,38 +34,76 @@ def cleanup_data() -> None:
 def __is_combination_present( username : str , rolename: str , row:dict , df:pd.DataFrame ) -> bool:                
      return (
         (
-            (df['PERSON_NAME'].str.upper().str.strip() == username.upper().strip()) & 
+            (df['USER_NAME'].str.upper().str.strip() == username.upper().strip()) & 
             (df['JOB_ROLE_NAME'].str.upper().str.strip() == rolename.upper().strip()) & 
             (df['SECURITY_CONTEXT'].str.upper().str.strip() == str(row['SecurityContext']).upper().strip()) & 
             (df['SECURITY_CONTEXT_VALUE'].str.upper().str.strip() == str(row['SecurityContextValue']).upper().strip())
         )
     ).any()
+
+def __get_userrole_assignment_id(username : str , rolename: str , row:dict , df:pd.DataFrame) -> str:
+    row = df[ (
+            (df['USER_NAME'].str.upper().str.strip() == username.upper().strip()) & 
+            (df['JOB_ROLE_NAME'].str.upper().str.strip() == rolename.upper().strip()) & 
+            (df['SECURITY_CONTEXT'].str.upper().str.strip() == str(row['SecurityContext']).upper().strip()) & 
+            (df['SECURITY_CONTEXT_VALUE'].str.upper().str.strip() == str(row['SecurityContextValue']).upper().strip())
+        )].iloc[0]
     
-    
+    return int(row['USER_ROLE_DATA_ASSIGNMENT_ID']) , row['IS_DATA_ACCESS_ACTIVE']
+            
 
 def __filter_dataccess_data(json_data: list , df : pd.DataFrame) -> list:    
-    filtered_data = []
+    create_filtered_data = []
+    update_filter_data = []
         
     for record in json_data:        
         username = record['UserName']
         rolename = record['RoleName']
-        data = [row for row in record['dataAccess'] if not __is_combination_present(username=username , rolename= rolename , row=row , df=df)]
-        d = {
+        
+        create_data = []
+        update_data = []
+        
+        
+        # data = [row for row in record['dataAccess'] if not __is_combination_present(username=username , rolename= rolename , row=row , df=df)]
+        # d = {
+        #     "UserName" : username,
+        #     "RoleName" : rolename,
+        #     "dataAccess" : data
+        # }
+        # create_filtered_data.append(d)
+                
+        
+        for row in record['dataAccess']:            
+            if not __is_combination_present(username=username , rolename= rolename , row=row , df=df):
+                create_data.append(row)
+            else:
+                row['USER_ROLE_DATA_ASSIGNMENT_ID'] , row['IS_DATA_ACTIVE']= __get_userrole_assignment_id(username=username , rolename= rolename , row=row , df=df)
+                update_data.append(row)
+        create_d = {
             "UserName" : username,
             "RoleName" : rolename,
-            "dataAccess" : data
+            "dataAccess" : create_data
         }
-        filtered_data.append(d)
-    return filtered_data
+        
+        update_d = {
+            "UserName" : username,
+            "RoleName" : rolename,
+            "dataAccess" : update_data
+        }
+        
+        create_filtered_data.append(create_d)
+        update_filter_data.append(update_d)
+        
+    return create_filtered_data , update_filter_data
 
-def get_dataccess_data() -> str:
-    erp_url , username , password , guid_report , roles_report = get_config_details()
+
+def get_dataccess_data(df:pd.DataFrame) -> str:
+    # erp_url , username , password , guid_report , roles_report = get_config_details()
     json_data = get_dataccess_source_data()  
     if json_data is None:
-        return None          
-    df = ErpReportService(erp_url,username,password).runrolesreport(roles_report , save_report_name= 'temp.csv')
-    filter_data = __filter_dataccess_data(json_data=json_data , df=df)
-    return json.dumps(filter_data , indent=4)
+        return None              
+    create_filter_data , update_filer_data = __filter_dataccess_data(json_data=json_data , df=df)    
+    return json.dumps(create_filter_data , indent=4) , json.dumps(update_filer_data , indent= 4)
 
 
 def save_latest_roles_report() -> None:
@@ -78,22 +116,31 @@ def main():
     setup_folders()
     cleanup_data()
     status = ErpReportService(erp_url,username,password).runguidreport(guid_report , save_report_name='guid_report.xls')    
-    if 'Success' == status:
+    df = ErpReportService(erp_url,username,password).runrolesreport(roles_report , save_report_name= 'temp.csv')
+    if ('Success' == status) and (df is not None):
         user_roles_data = get_user_roles_data_with_guid()        
         if user_roles_data is None:            
             print(f"there is not data to process for roles ")        
         else:
             UserRoles(erp_url,username,password).assign_roles_to_users(user_roles_data= user_roles_data)        
         
-        dataccess_data = get_dataccess_data() 
+        create_dataccess_data , update_dataccess_data = get_dataccess_data(df=df) 
         
-        if dataccess_data is None:
-            print(f"there is not data to process for dataccess sets ")        
+        if create_dataccess_data is None:
+            print(f"there is not data to process for create dataccess sets ")        
         else:            
-            RoleDatAccess(erp_url,username,password).assign_dataccess_to_users(roles_dataaccess_data=dataccess_data)
-            save_latest_roles_report()
+            RoleDatAccess(erp_url,username,password,'create').assign_dataccess_to_users(roles_dataaccess_data=create_dataccess_data)            
+        
+        # if len(json.loads(update_dataccess_data)) == 0:
+        if update_dataccess_data is None:
+            print(f"there is no data to update data access data")
+        else:
+            RoleDatAccess(erp_url,username,password,'update').update_dataccess_to_users(roles_dataaccess_data=update_dataccess_data)            
+        
+        save_latest_roles_report()
+        
     else:
-        print(status)
+        print("Error while invoking the guid report or Roles report")
 
 if __name__ == '__main__':
     main()    

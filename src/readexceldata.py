@@ -180,8 +180,7 @@ def __roles_dataccess_excel_to_json(file_path) -> list:
             'UserName': row[0],
             'RoleName':row[1],
             'SecurityContext': row[2] ,
-            "SecurityContextValue" : row[3]
-            
+            "SecurityContextValue" : row[3]            
         }
         # Append the row dictionary to the data list
         data.append(row_data)        
@@ -219,4 +218,6 @@ def get_dataccess_source_data() -> object:
 
         
 
-# print(get_user_roles_data_with_guid())
+# print(get_user_roles_data_with_guid() )
+# df = pd.read_csv(r'..\data\temp.csv')
+# print(df.head(5))

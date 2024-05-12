@@ -63,12 +63,14 @@ class ErpReportService:
         if response.status_code == 200:
             report_bytes = self.extract_report_bytes(str(response.text))            
             if report_bytes:
-                df = self.decode_base64_to_df(report_bytes , save_report_name)                            
-                return df
+               df = self.decode_base64_to_df(report_bytes , save_report_name)                            
+               return df
             else:
-                return f"report_bytes are empty"
+               print("Report bytes are empty")                
+               return None
         else:
-            return f"Error while invokeing report  {response.status_code} {response.text}"
+            print(f"Error while invokeing report  {response.status_code} {response.text}")
+            return None                     
     
     def runguidreport(self, report_path: str , save_report_name : str) -> str:
         
