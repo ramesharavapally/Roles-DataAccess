@@ -116,16 +116,16 @@ def __replace_with_ids(data, user_df , role_df) -> list:
     updated_data = []    
     for item in data:   
         user_role_dict = {}             
-        user_role_dict['UserName'] = item['UserName']        
-        if user_df['USERNAME'].str.contains(item['UserName']).any():            
+        user_role_dict['UserName'] = item['UserName']                  
+        if  len(user_df[user_df['USERNAME'] == item['UserName']]) > 0:
             user_id = user_df.loc[user_df['USERNAME'] == item['UserName'], 'USER GUID'].values[0]            
             user_role_dict['UserID'] = user_id
             roles = []
             for role in item['Roles']:
                 role_dict = {}                        
                 role_dict['RoleName'] = role['RoleName']
-                role_dict['Operation'] = role['Operation']
-                if role_df['ROLENAME'].str.contains(role['RoleName']).any():
+                role_dict['Operation'] = role['Operation']                
+                if len(role_df[role_df['ROLENAME'] ==role['RoleName']]) > 0:
                     role_guid = role_df.loc[role_df['ROLENAME'] == role['RoleName'], 'ROLE GUID'].values[0]
                     role_dict['RoleID'] = role_guid
                 else:

@@ -49,7 +49,7 @@ class UserRoles:
                                                 }}                                      
                                             """                                            
                     response = requests.patch(url=url , auth =(self.user_name , self.password),data =  payload , headers = self.headers)                        
-                    self.logger.info(f"role: {role['RoleName']} , operation : {role['Operation']} , with status : {response.status_code}")                                
+                    self.logger.info(f"role: {role['RoleName']} , operation : {role['Operation']} , with status : {response.status_code} response : {response.text}")                                
                 except Exception as e:
                     tb_info = traceback.format_exc()                            
                     self.logger.error(f"Error while processing role {role['RoleName']}")

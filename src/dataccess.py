@@ -52,8 +52,9 @@ class RoleDatAccess:
         
         for role in roles_dataccess:      
             print(f"""processing for the user "{role['UserName']}" and role "{role['RoleName']}" with "{[ (r['SecurityContext'] , r['SecurityContextValue']) for r in role['dataAccess'] ]}" """)
-            self.logger.info(f"""processing for the user "{role['UserName']}" and role "{role['RoleName']}" with "{[ (r['SecurityContext'] , r['SecurityContextValue']) for r in role['dataAccess'] ]}" """)                                      
+            self.logger.info(f"""processing for the user "{role['UserName']}" and role "{role['RoleName']}" with "{[ (r['SecurityContext'] , r['SecurityContextValue']) for r in role['dataAccess'] ]}" """)                                                  
             payload = json.dumps(self.preparePayload(role), indent=4)                           
+            # self.logger.debug(payload)
             response = requests.post(url=url , auth =(self.user_name , self.password),data =  payload , headers = self.headers)                                    
             if response.status_code != 200:
                 self.logger.error(f"Error with status : {response.status_code} {response.text}\n\n")                     
