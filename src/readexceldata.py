@@ -214,10 +214,69 @@ def get_dataccess_source_data() -> object:
     else:                        
         return json.loads(transformed_json)
     
+    
+    
+##
+## For users
+##    
+    
+    
+def __users_excel_to_json(file_path) -> list:        
+    if is_file_open(file_path):
+        raise Exception(f"Error: File '{file_path}' is already open. Please close the file and try again.")            
+    if is_sheet_empty(file_path= file_path , sheet_name='Users'):
+        return None
+    sheet = __read_sheet_as_strings(file_path= file_path , sheet_name='Users')
+    
+    # Define an empty list to store the data
+    data = []
+    
+    # Iterate over rows in the Excel sheet, starting from the second row to skip the header    
+    for row in sheet:
+        # Create a dictionary to store each row of data
+        row = list(row)
+        if all(rec == '' for rec in row):
+            continue
+        for i in range(len(row)):
+            if row[i] is None:
+                row[i] = ""
+        row_data = {
+            'userName': row[0],
+            'firstName':row[1],
+            'lastName': row[2] ,
+            "email" : row[3]            
+        }
+        # Append the row dictionary to the data list
+        data.append(row_data)        
+    return data
 
+def get_user_source_data() -> None:
+    # List to store JSON data from all files
+    json_data_array = []
+    folder_path = r'..\data\roles'
+
+    # Iterate over files in the folder
+    for filename in os.listdir(folder_path):        
+        if filename.endswith('.xlsx') or filename.endswith('.xls'):
+            file_path = os.path.join(folder_path, filename)
+            json_data = __users_excel_to_json(file_path)
+            if json_data is None:
+                continue
+            json_data_array.append(json_data)
+    
+    output = []
+    cleaned_json = None
+    if len(json_data_array) == 0:
+        return None
+    for record in json_data_array:
+        output.extend(record)
+        df = pd.read_json(json.dumps(output))
+        cleaned_df = df.drop_duplicates()
+        cleaned_json = cleaned_df.to_json(orient='records' , indent=4)
+        
+    return cleaned_json
 
         
 
-# print(get_user_roles_data_with_guid() )
-# df = pd.read_csv(r'..\data\temp.csv')
-# print(df.head(5))
+# data = get_user_source_data()
+# print(data)

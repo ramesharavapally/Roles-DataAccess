@@ -1,8 +1,9 @@
 from runreport import ErpReportService
 import configparser
-from readexceldata import get_user_roles_data_with_guid , get_dataccess_source_data
+from readexceldata import get_user_roles_data_with_guid , get_dataccess_source_data , get_user_source_data
 from userole import UserRoles
 from dataccess import RoleDatAccess
+from users import Users
 import pandas as pd
 import json
 import os
@@ -118,6 +119,13 @@ def main():
     status = ErpReportService(erp_url,username,password).runguidreport(guid_report , save_report_name='guid_report.xls')    
     df = ErpReportService(erp_url,username,password).runrolesreport(roles_report , save_report_name= 'temp.csv')
     if ('Success' == status) and (df is not None):
+        
+        users = get_user_source_data()
+        if users is None:
+            print(f"there is not data to process for Users ")        
+        else:
+            Users(erp_url,username,password).create_users(users)
+    
         user_roles_data = get_user_roles_data_with_guid()        
         if user_roles_data is None:            
             print(f"there is not data to process for roles ")        
