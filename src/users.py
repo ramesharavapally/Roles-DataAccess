@@ -19,9 +19,7 @@ class Users:
                     'Content-type':'application/json', 
                     'Accept':'application/json'
                         }
-    
-    def get_report_data(self) -> pd.DataFrame:
-        return pd.read_csv(r'..\data\temp.csv')
+        
     
     def __is_combination_present(self , username : str) -> bool:
         api_url = f"""/hcmRestApi/scim/Users?filter=userName eq "{username}" """
@@ -60,8 +58,7 @@ class Users:
 
     def create_users(self , users_data:str) -> None:        
         users_data = json.loads(users_data)
-        api_url = '/hcmRestApi/scim/Users'    
-        df = self.get_report_data()
+        api_url = '/hcmRestApi/scim/Users'            
         url = f"{self.erp_url}{api_url}"
         
         self.logger.info(f""" Start processing for Users create data   \n""")                

@@ -114,41 +114,53 @@ def save_latest_roles_report() -> None:
 
 def main():
     erp_url , username , password , guid_report , roles_report = get_config_details()    
-    setup_folders()
-    cleanup_data()
-    status = ErpReportService(erp_url,username,password).runguidreport(guid_report , save_report_name='guid_report.xls')    
-    df = ErpReportService(erp_url,username,password).runrolesreport(roles_report , save_report_name= 'temp.csv')
-    if ('Success' == status) and (df is not None):
-        
-        users = get_user_source_data()
-        if users is None:
-            print(f"there is not data to process for Users ")        
-        else:
-            Users(erp_url,username,password).create_users(users)
     
-        user_roles_data = get_user_roles_data_with_guid()        
-        if user_roles_data is None:            
-            print(f"there is not data to process for roles ")        
-        else:
-            UserRoles(erp_url,username,password).assign_roles_to_users(user_roles_data= user_roles_data)        
-        
-        create_dataccess_data , update_dataccess_data = get_dataccess_data(df=df) 
-        
-        if create_dataccess_data is None:
-            print(f"there is not data to process for create dataccess sets ")        
-        else:            
-            RoleDatAccess(erp_url,username,password,'create').assign_dataccess_to_users(roles_dataaccess_data=create_dataccess_data)            
-        
-        # if len(json.loads(update_dataccess_data)) == 0:
-        if update_dataccess_data is None:
-            print(f"there is no data to update data access data")
-        else:
-            RoleDatAccess(erp_url,username,password,'update').update_dataccess_to_users(roles_dataaccess_data=update_dataccess_data)            
-        
-        save_latest_roles_report()
-        
+    setup_folders()
+    cleanup_data()        
+    
+    print(f"*******Start of processing for user creation***************")
+    
+    users = get_user_source_data()        
+    if users is None:
+        print(f"there is not data to process for Users ")        
     else:
-        print("Error while invoking the guid report or Roles report")
+        Users(erp_url,username,password).create_users(users)
+    
+    print(f"*******End of processing for user creation***************\n")    
+    
+    status = ErpReportService(erp_url,username,password).runguidreport(guid_report , save_report_name='guid_report.xls')           
+    df = ErpReportService(erp_url,username,password).runrolesreport(roles_report , save_report_name= 'temp.csv')
+    if ('Success' != status) or (df is None):
+        print('Error while creating the guid_report or roles report report')
+        return
+    
+    print(f"*******Start of processing for user Roles creation***************")
+    
+    user_roles_data = get_user_roles_data_with_guid()        
+    if user_roles_data is None:            
+        print(f"there is not data to process for roles ")        
+    else:
+        UserRoles(erp_url,username,password).assign_roles_to_users(user_roles_data= user_roles_data)        
+    
+    print(f"*******End of processing for user Roles creation***************\n")
+    
+    print(f"*******Start of processing for Roles Data Access creation***************")
+        
+    create_dataccess_data , update_dataccess_data = get_dataccess_data(df=df) 
+        
+    if create_dataccess_data is None:
+        print(f"there is not data to process for create dataccess sets ")        
+    else:            
+        RoleDatAccess(erp_url,username,password,'create').assign_dataccess_to_users(roles_dataaccess_data=create_dataccess_data)            
+            
+    if update_dataccess_data is None:
+        print(f"there is no data to update data access data")
+    else:
+        RoleDatAccess(erp_url,username,password,'update').update_dataccess_to_users(roles_dataaccess_data=update_dataccess_data)                            
+        
+    save_latest_roles_report()
+    print(f"*******End of processing for Roles Data Access creation***************\n")
+            
 
 if __name__ == '__main__':
     main()    
